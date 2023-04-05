@@ -19,7 +19,7 @@ void print_tire_sensor(tire_sensor *s) {
     printf("Pressure: %.2f\n", s->pressure);
     printf("Temperature: %.2f\n", s->temperature);
     printf("Wear Level: %d%%\n", s->wear_level);
-    // printf("Performance Score: %d", s->performace_score);
+    ///////////// printf("Performance Score: %d", s->performace_score);
     printf("Performance Score: Not Calculated\n");
 }
 
@@ -41,15 +41,31 @@ void print_PMU(power_management_unit *s) {
 }
 
 int cmpfunc(const void *a, const void *b) {
-    a = (sensor *)(a);
-    b = (sensor *)(b);
-    return ((sensor *)a)->sensor_type -
-           ((sensor *)b)->sensor_type;  // nu-s sigur ordinea intre ele
+    int x, y;
+    if ((((sensor *)a)->sensor_type) == TIRE)
+        x = 1;
+    else
+        x = 0;
+
+    if ((((sensor *)b)->sensor_type) == TIRE)
+        y = 1;
+    else
+        y = 0;
+
+    // printf("x = %d\n", x);
+    // printf("y = %d\n", y);
+    return x - y;  //  daca e pozitiv se face interschimbarea
+}
+
+void swap_sensors(sensor *a, sensor *b) {
+    sensor aux = *a;
+    *a = *b;
+    *b = aux;
 }
 
 int main(int argc, char const *argv[]) {
     // DECLARARI SI ALOCARI DE MEMORIE
-    int nr_senzori, tip_senzor, nr_operatii;
+    int nr_senzori, tip_senzor;
     FILE *in = fopen(argv[1], "rb");
     function_ptr *op = (function_ptr *)malloc(8 * sizeof(function_ptr));
 
@@ -61,43 +77,71 @@ int main(int argc, char const *argv[]) {
     sensor *sen = (sensor *)malloc(nr_senzori * sizeof(sensor));
     for (int i = 0; i < nr_senzori; ++i) {
         fread(&tip_senzor, sizeof(tip_senzor), 1, in);
-        // printf("tip_senzor: %d\n", tip_senzor);
+
         if (tip_senzor == 1) {         // senzor de tip PMU
             sen[i].sensor_type = PMU;  // punem campul pe PMU
             sen[i].sensor_data =
                 (power_management_unit *)malloc(sizeof(power_management_unit));
             read_PMU((power_management_unit *)(sen[i].sensor_data), in);
-            //print_PMU((power_management_unit *)(sen[i].sensor_data));
+            // print_PMU((power_management_unit *)(sen[i].sensor_data));
         } else {
             sen[i].sensor_type = TIRE;  // punem campul pe PMU
             sen[i].sensor_data = (tire_sensor *)malloc(sizeof(tire_sensor));
             read_tire_sensor((tire_sensor *)(sen[i].sensor_data), in);
-            //print_tire_sensor((tire_sensor *)(sen[i].sensor_data));
+            // print_tire_sensor((tire_sensor *)(sen[i].sensor_data));
         }
         fread(&sen[i].nr_operations, sizeof(int), 1, in);
-        //printf("nr de operatii:%d\n", sen[i].nr_operations);
-        sen[i].operations_idxs = (int *)malloc(sen[i].nr_operations * sizeof(int));
-        //printf("operatiile sunt:");
+        sen[i].operations_idxs =
+            (int *)malloc(sen[i].nr_operations * sizeof(int));
+
         for (int j = 0; j < sen[i].nr_operations; ++j) {
             fread(&sen[i].operations_idxs[j], sizeof(int), 1, in);
-            //printf("%d ", sen[i].operations_idxs[j]);
         }
-        //printf("\n\n");
+        // printf("\n\n");
+    }
+    // printf("ACUM SORTAM VECTORUL\n");
+
+    // bubble sort
+    int not_sorted = 1;
+    while (not_sorted) {
+        not_sorted = 0;
+        for (int i = 0; i < nr_senzori - 1; ++i) {
+            if (cmpfunc(&sen[i], &sen[i + 1]) > 0) {
+                swap_sensors(&sen[i], &sen[i + 1]);
+                not_sorted = 1;
+            }
+        }
     }
 
     // sortez vectorul dupa prioritatea senzorului
-    // qsort(sen, sizeof(sen), nr_senzori, cmpfunc);
+    // qsort(sen, sizeof(sensor), nr_senzori, cmpfunc);
+    // for (int i = 0; i < nr_senzori; ++i) {
+    //     if (sen[i].sensor_type == TIRE)
+    //         print_tire_sensor((tire_sensor *)(sen[i].sensor_data));
+    //     else
+    //         print_PMU((power_management_unit *)(sen[i].sensor_data));
+    // }
+    // if (sen[0].sensor_type == TIRE)
+    //     printf("TIRE 1\n");
+    // else
+    //     printf("PMU 0\n");
 
-    // printf("S-a terminat afisarea vectorului\n");
+    // // if (sen[2].sensor_type == TIRE)
+    // //     printf("TIRE 1\n");
+    // // else
+    // //     printf("PMU 0\n");
+
+    // printf("\n%d\n", cmpfunc(&sen[0], &sen[2]));
+
     char *operation = (char *)malloc(100 * sizeof(char));
     int index;
     do {
         scanf("%s", operation);
-        //printf("operatia este %s\n", operation);
+        // printf("operatia este %s\n", operation);
         if (strcmp(operation, "print") == 0) {
             scanf("%d", &index);
 
-            //printf("indexul este %d\n", index);
+            // printf("indexul este %d\n", index);
 
             if (index < 0 || index >= nr_senzori)
                 printf("Index not in range!\n");
@@ -106,8 +150,7 @@ int main(int argc, char const *argv[]) {
                     print_PMU(
                         (power_management_unit *)(sen[index].sensor_data));
                 if (sen[index].sensor_type == TIRE)
-                    print_tire_sensor((tire_sensor
-                    *)(sen[index].sensor_data));
+                    print_tire_sensor((tire_sensor *)(sen[index].sensor_data));
             }
         }
 
@@ -130,12 +173,12 @@ int main(int argc, char const *argv[]) {
 }
 
 // to do
-// 1 de ce nu citeste bine din binar
 // 2 vezi de ce buseste sortarea
 // 3 faci functia clear care sterge toti senzorii care au valori eronate
 // 4 faci functia analyze care aplica funtiile retinute in vectorul de pointeri
 // la functii (folosesti op[sen[i].operation_indx[j]]((cast)(senzor)) ca sa faci
-// o anumita operatie pentru un senzor) 5 verifici sa nu ai leakuri de memorie
+// o anumita operatie pentru un senzor)
+// 5 verifici sa nu ai leakuri de memorie
 // 6 coding style si readme
 
 // sen->sensor_type = PMU;
