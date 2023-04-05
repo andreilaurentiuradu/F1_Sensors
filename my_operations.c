@@ -58,7 +58,8 @@ int cmpfunc(const void *a, const void *b)
 	else
 		y = 0;
 
-	return x - y;  //  daca e pozitiv se face interschimbarea
+	//  daca e pozitiv se face interschimbarea
+	return x - y;
 }
 
 void swap_sensors(sensor *a, sensor *b)
@@ -104,8 +105,10 @@ int check_TIRE(tire_sensor *s)
 
 void delete_sensor(sensor *s, int index, int *nr_senzori)
 {
+	// eliberam memoria ocupata de senzor
 	free(s[index].operations_idxs);
 	free(s[index].sensor_data);
+	// mutam senzorii de dupa index cu o pozitie la stanga
 	for (int i = index + 1; i < (*nr_senzori); ++i) {
 		s[i - 1] = s[i];
 	}
