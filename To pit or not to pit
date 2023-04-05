@@ -18,9 +18,9 @@ void print_tire_sensor(tire_sensor *s) {
     printf("Tire Sensor\n");
     printf("Pressure: %.2f\n", s->pressure);
     printf("Temperature: %.2f\n", s->temperature);
-    printf("Wear Level: %d\n", s->wear_level);
+    printf("Wear Level: %d%%\n", s->wear_level);
     // printf("Performance Score: %d", s->performace_score);
-    printf("/Performance Score: Not Calculated\n");
+    printf("Performance Score: Not Calculated\n");
 }
 
 void read_PMU(power_management_unit *s, FILE *in) {
@@ -36,8 +36,8 @@ void print_PMU(power_management_unit *s) {
     printf("Voltage: %.2f\n", s->voltage);
     printf("Current: %.2f\n", s->current);
     printf("Power Consumption: %.2f\n", s->power_consumption);
-    printf("Energy Regen: %d\n", s->energy_regen);
-    printf("Energy Storage: %d\n", s->energy_storage);
+    printf("Energy Regen: %d%%\n", s->energy_regen);
+    printf("Energy Storage: %d%%\n", s->energy_storage);
 }
 
 int cmpfunc(const void *a, const void *b) {
@@ -67,20 +67,22 @@ int main(int argc, char const *argv[]) {
             sen[i].sensor_data =
                 (power_management_unit *)malloc(sizeof(power_management_unit));
             read_PMU((power_management_unit *)(sen[i].sensor_data), in);
-            // print_PMU((power_management_unit *)(sen[i].sensor_data));
+            //print_PMU((power_management_unit *)(sen[i].sensor_data));
         } else {
             sen[i].sensor_type = TIRE;  // punem campul pe PMU
             sen[i].sensor_data = (tire_sensor *)malloc(sizeof(tire_sensor));
             read_tire_sensor((tire_sensor *)(sen[i].sensor_data), in);
-            fread(&nr_operatii, sizeof(int), 1, in);
-            // print_tire_sensor((tire_sensor *)(sen[i].sensor_data));
+            //print_tire_sensor((tire_sensor *)(sen[i].sensor_data));
         }
         fread(&sen[i].nr_operations, sizeof(int), 1, in);
-        sen[i].operations_idxs = (int *)malloc(nr_operatii * sizeof(int));
-
-        for (int j = 1; j <= nr_operatii; ++j) {
+        //printf("nr de operatii:%d\n", sen[i].nr_operations);
+        sen[i].operations_idxs = (int *)malloc(sen[i].nr_operations * sizeof(int));
+        //printf("operatiile sunt:");
+        for (int j = 0; j < sen[i].nr_operations; ++j) {
             fread(&sen[i].operations_idxs[j], sizeof(int), 1, in);
+            //printf("%d ", sen[i].operations_idxs[j]);
         }
+        //printf("\n\n");
     }
 
     // sortez vectorul dupa prioritatea senzorului
@@ -91,10 +93,11 @@ int main(int argc, char const *argv[]) {
     int index;
     do {
         scanf("%s", operation);
-        // printf("operatia este %s\n", operation);
+        //printf("operatia este %s\n", operation);
         if (strcmp(operation, "print") == 0) {
             scanf("%d", &index);
-            // printf("indexul este %d\n", index);
+
+            //printf("indexul este %d\n", index);
 
             if (index < 0 || index >= nr_senzori)
                 printf("Index not in range!\n");
@@ -103,7 +106,8 @@ int main(int argc, char const *argv[]) {
                     print_PMU(
                         (power_management_unit *)(sen[index].sensor_data));
                 if (sen[index].sensor_type == TIRE)
-                    print_tire_sensor((tire_sensor *)(sen[index].sensor_data));
+                    print_tire_sensor((tire_sensor
+                    *)(sen[index].sensor_data));
             }
         }
 
@@ -112,10 +116,11 @@ int main(int argc, char const *argv[]) {
         }
     } while (1);
 
-    // // ELIBERARI DE MEMORIE
+    // ELIBERARI DE MEMORIE
     for (int i = 0; i < nr_senzori; ++i) {
         free(sen[i].sensor_data);  // eliberam memoria pentru
         // sen[i].sensor_data(campul care retine practic senzorul)
+        free(sen[i].operations_idxs);
     }
     free(operation);
     free(op);    // vect de operatii
@@ -123,6 +128,7 @@ int main(int argc, char const *argv[]) {
     fclose(in);  // inchidem fisierul binar din care am citit
     return 0;
 }
+
 // to do
 // 1 de ce nu citeste bine din binar
 // 2 vezi de ce buseste sortarea
