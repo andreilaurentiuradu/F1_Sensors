@@ -5,84 +5,111 @@
 #include "structs.h"
 
 typedef void (*function_ptr)(void *);
+// cream vectorul de functii
 void get_operations(void **operations);
+// citim datele despre un senzor TIRE
 void read_tire_sensor(tire_sensor *s, FILE *in);
+// afisam datele despre un senzor TIRE
 void print_tire_sensor(tire_sensor *s);
+// citim datele despre un senzor PMU
 void read_PMU(power_management_unit *s, FILE *in);
+// afisam datele despre un senzor PMU
 void print_PMU(power_management_unit *s);
+// functia de comparare a doi senzori
 int cmpfunc(const void *a, const void *b);
+// functia de interschimbare a doi senzori
 void swap_sensors(sensor *a, sensor *b);
+// functia care face operatia de analyze
 void analyze(sensor *s, function_ptr *op);
+// functia care sterge toti senzorii eronati
 void clear_sensors(sensor s[], int *nr_senzori);
+// functia care sterge un senzor de la o anumita pozitie
 void delete_sensor(sensor *s, int index, int *nr_senzori);
+// functia care verifica daca senzorul TIRE este valid
 int check_TIRE(tire_sensor *s);
+// functia care verifica daca senzorul PMU este valid
 int check_PMU(power_management_unit *s);
 
 int main(int argc, char const *argv[])
 {
-	// DECLARARI SI ALOCARI DE MEMORIE
 	int nr_senzori, tip_senzor;
 	FILE *in = fopen(argv[1], "rb");
+
+	// alocam memorie pentru vectorul de pointeri la functii
+	// care va retine cele 8 operatii
 	function_ptr *op = (function_ptr *)malloc(8 * sizeof(function_ptr));
 
-	// //OPERATII EFECTIVE
+	// punem functiile in vector
 	get_operations((void **)(op));
+
+	// citim nr de senzori
 	fread(&nr_senzori, sizeof(nr_senzori), 1, in);
-	// printf("nr_senzori: %d\n", nr_senzori);
-	//   alocam memorie pentru vectorul de senzori
+
+	// alocam memorie pentru vectorul de senzori
 	sensor *sen = (sensor *)malloc(nr_senzori * sizeof(sensor));
+
 	for (int i = 0; i < nr_senzori; ++i) {
+		// citim tipul senzorului 0/1
 		fread(&tip_senzor, sizeof(tip_senzor), 1, in);
 
-		if (tip_senzor == 1) {         // senzor de tip PMU
-			sen[i].sensor_type = PMU;  // punem campul pe PMU
+		// senzor de tip PMU
+		if (tip_senzor == 1) {
+			// il marcam ca fiind de tip PMU
+			sen[i].sensor_type = PMU;
+			// alocam memorie pentru tipul de senzor PMU
 			sen[i].sensor_data =
 				(power_management_unit *)malloc(sizeof(power_management_unit));
+			// citim campurile
 			read_PMU((power_management_unit *)(sen[i].sensor_data), in);
-			// print_PMU((power_management_unit *)(sen[i].sensor_data));
 		} else {
-			sen[i].sensor_type = TIRE;  // punem campul pe PMU
+			// il marcam ca fiinf de tip TIRE
+			sen[i].sensor_type = TIRE;
+			// alocam memorie pentru tipul de senzor TIRE
 			sen[i].sensor_data = (tire_sensor *)malloc(sizeof(tire_sensor));
+			// citim campurile
 			read_tire_sensor((tire_sensor *)(sen[i].sensor_data), in);
-			// print_tire_sensor((tire_sensor *)(sen[i].sensor_data));
 		}
+		// citim nr de operatii
 		fread(&sen[i].nr_operations, sizeof(int), 1, in);
+		// alocam memorie pentru vectorul de indecsi
 		sen[i].operations_idxs =
 			(int *)malloc(sen[i].nr_operations * sizeof(int));
 
+		// citim indecsii
 		for (int j = 0; j < sen[i].nr_operations; ++j) {
 			fread(&sen[i].operations_idxs[j], sizeof(int), 1, in);
 		}
-		// printf("\n\n");
 	}
-	// bubble sort
+	// sortam vectorul de senzori folosind bubble sort
+	// si functia de comparare cmpfunc
 	int not_sorted = 1;
 	while (not_sorted) {
 		not_sorted = 0;
 		for (int i = 0; i < nr_senzori - 1; ++i) {
 			if (cmpfunc(&sen[i], &sen[i + 1]) > 0) {
+				// in cazul in care sen[i] e de tip TIRE si
+				// sen[i+1] e de tip PMU facem interschimbarea
 				swap_sensors(&sen[i], &sen[i + 1]);
 				not_sorted = 1;
 			}
 		}
 	}
 
-	// delete_sensor(sen, 0, &nr_senzori);
+	// alocam memorie pentru operatiile pe care le citim
 	char *operation = (char *)malloc(100 * sizeof(char));
 	int index;
 	do {
+		// citim operatia
 		scanf("%s", operation);
-		// fscanf(temporar, "%s", operation);
-		//  printf("operatia este %s\n", operation);
-		if (strcmp(operation, "print") == 0) {
-			scanf("%d", &index);
-			// fscanf(temporar, "%d", &index);
-			//  printf("indexul este %d\n", index);
 
+		if (strcmp(operation, "print") == 0) {
+			// daca e print citim si indexul de dupa
+			scanf("%d", &index);
 			if (index < 0 || index >= nr_senzori) {
-				// fprintf(out, "Index not in range!\n");
+				// daca indexul nu se afla in vector
 				printf("Index not in range!\n");
 			} else {
+				// daca se afla in vector afisam datele senzorului
 				if (sen[index].sensor_type == PMU)
 					print_PMU(
 						(power_management_unit *)(sen[index].sensor_data));
@@ -92,62 +119,44 @@ int main(int argc, char const *argv[])
 		}
 
 		if (strcmp(operation, "analyze") == 0) {
+			// daca e analyze citim si indexul de dupa
 			scanf("%d", &index);
-			// fscanf(temporar, "%d", &index);
-
-			// printf("indexul este %d\n", index);
-
 			if (index < 0 || index >= nr_senzori) {
-				// fprintf(out, "Index not in range!\n");
+				// daca indexul nu se afla in vector
 				printf("Index not in range!\n");
 			} else {
+				// daca se afla in vector facem operatiile pe senzor
 				analyze(&sen[index], op);
 			}
 		}
 
 		if (strcmp(operation, "clear") == 0) {
-			// printf("nr de senzori inainte: %d\n", nr_senzori);
-
+			// daca e clear stergem senzorii eronati
 			clear_sensors(sen, &nr_senzori);
-			// printf("nr de senzori dupa: %d\n", nr_senzori);
 		}
 		if (strcmp(operation, "exit") == 0) {
+			// daca e exit eliberam memoria si programul se incheie
 			break;
 		}
 	} while (1);
 
 	// ELIBERARI DE MEMORIE
 	for (int i = 0; i < nr_senzori; ++i) {
-		free(sen[i].sensor_data);  // eliberam memoria pentru
-		// sen[i].sensor_data(campul care retine practic senzorul)
+		// eliberam memoria pentru sen[i].sensor_data
+		// (campul care retine practic senzorul) si pointerul cu indecsii
+		free(sen[i].sensor_data);
 		free(sen[i].operations_idxs);
 	}
+	// containerul care retine operatiile citite
 	free(operation);
-	free(op);  // vect de operatii
-	// if(nr_senzori)
-	free(sen);   // eliberez memoria ocupata de vectorul de senzori
-	fclose(in);  // inchidem fisierul binar din care am citit
+	// vect de operatii
+	free(op);
+	// vectorul de senzori
+	free(sen);
+	// inchidem fisierul binar din care am citit
+	fclose(in);
 	return 0;
 }
 
 // to do
-// 3 verifici de ce nu iei puncte pe checker pentru clean
-// 5 verifici sa nu ai leakuri de memorie
-// 6 coding style si readme
-// 7 de pus freeurile la exit
-// sen->sensor_type = PMU;
-// if(sen->sensor_type == PMU)
-// {
-// 	sen->sensor_data = (tire_sensor *)malloc(sizeof(tire_sensor)); // aloc
-// memorie pentru variabile de tip tire_sensor
-// 	((tire_sensor *)sen->sensor_data)->temperature = 500; // fac castul la
-// tire_sensor pentru a avea acces la campuri
-
-// 	op[sen->operations_idxs[0]](sen->sensor_data);
-// }
-
-// // sen->sensor_type->temperature = 50;
-// get_operations((void **)sen->operations_idxs);
-// sen->operations_idxs[1]((void *) sen);
-// sen->operations_idxs[0](NULL);
-// int (* anotherFunction)(int, int)
+// README CAND E GATA VMCHECKERUL
