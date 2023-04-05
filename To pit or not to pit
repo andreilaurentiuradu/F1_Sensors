@@ -19,8 +19,10 @@ void print_tire_sensor(tire_sensor *s) {
     printf("Pressure: %.2f\n", s->pressure);
     printf("Temperature: %.2f\n", s->temperature);
     printf("Wear Level: %d%%\n", s->wear_level);
-    ///////////// printf("Performance Score: %d", s->performace_score);
-    printf("Performance Score: Not Calculated\n");
+    if(s->performace_score != 0)
+        printf("Performance Score: %d\n", s->performace_score);
+    else
+        printf("Performance Score: Not Calculated\n");
 }
 
 void read_PMU(power_management_unit *s, FILE *in) {
@@ -52,8 +54,6 @@ int cmpfunc(const void *a, const void *b) {
     else
         y = 0;
 
-    // printf("x = %d\n", x);
-    // printf("y = %d\n", y);
     return x - y;  //  daca e pozitiv se face interschimbarea
 }
 
@@ -63,10 +63,18 @@ void swap_sensors(sensor *a, sensor *b) {
     *b = aux;
 }
 
+void analyze(sensor *s, function_ptr *op) {
+    for(int i = 0; i < s->nr_operations; ++i) {
+        op[s->operations_idxs[i]](s->sensor_data);
+    }
+}
+
 int main(int argc, char const *argv[]) {
     // DECLARARI SI ALOCARI DE MEMORIE
     int nr_senzori, tip_senzor;
+    //FILE *out = fopen("output_ana", "w");
     FILE *in = fopen(argv[1], "rb");
+    //FILE *temporar = fopen("input_ana", "r");
     function_ptr *op = (function_ptr *)malloc(8 * sizeof(function_ptr));
 
     // //OPERATII EFECTIVE
@@ -113,25 +121,6 @@ int main(int argc, char const *argv[]) {
         }
     }
 
-    // sortez vectorul dupa prioritatea senzorului
-    // qsort(sen, sizeof(sensor), nr_senzori, cmpfunc);
-    // for (int i = 0; i < nr_senzori; ++i) {
-    //     if (sen[i].sensor_type == TIRE)
-    //         print_tire_sensor((tire_sensor *)(sen[i].sensor_data));
-    //     else
-    //         print_PMU((power_management_unit *)(sen[i].sensor_data));
-    // }
-    // if (sen[0].sensor_type == TIRE)
-    //     printf("TIRE 1\n");
-    // else
-    //     printf("PMU 0\n");
-
-    // // if (sen[2].sensor_type == TIRE)
-    // //     printf("TIRE 1\n");
-    // // else
-    // //     printf("PMU 0\n");
-
-    // printf("\n%d\n", cmpfunc(&sen[0], &sen[2]));
 
     char *operation = (char *)malloc(100 * sizeof(char));
     int index;
@@ -154,6 +143,17 @@ int main(int argc, char const *argv[]) {
             }
         }
 
+        if (strcmp(operation, "analyze") == 0) {
+            scanf("%d", &index);
+
+            // printf("indexul este %d\n", index);
+
+            if (index < 0 || index >= nr_senzori)
+                printf("Index not in range!\n");
+            else {
+                analyze(&sen[index], op);
+            }
+        }
         if (strcmp(operation, "exit") == 0) {
             break;
         }
@@ -173,11 +173,8 @@ int main(int argc, char const *argv[]) {
 }
 
 // to do
-// 2 vezi de ce buseste sortarea
 // 3 faci functia clear care sterge toti senzorii care au valori eronate
 // 4 faci functia analyze care aplica funtiile retinute in vectorul de pointeri
-// la functii (folosesti op[sen[i].operation_indx[j]]((cast)(senzor)) ca sa faci
-// o anumita operatie pentru un senzor)
 // 5 verifici sa nu ai leakuri de memorie
 // 6 coding style si readme
 
@@ -197,40 +194,3 @@ int main(int argc, char const *argv[]) {
 // sen->operations_idxs[1]((void *) sen);
 // sen->operations_idxs[0](NULL);
 // int (* anotherFunction)(int, int)
-
-// sen[i].sensor_type = TIRE;  // punem campul pe PMU
-// 			sen[i].sensor_data = (tire_sensor
-// *)malloc(sizeof(tire_sensor));
-//             printf("Tire Sensor\n");
-//             fread(&((tire_sensor *)sen[i].sensor_data)->pressure,
-//             sizeof(float), 1, in); printf("Pressure: %.2f\n", ((tire_sensor
-//             *)sen[i].sensor_data)->pressure); fread(&((tire_sensor
-//             *)sen[i].sensor_data)->temperature, sizeof(float), 1, in);
-//             printf("Temperature: %.2f\n", ((tire_sensor
-//             *)sen[i].sensor_data)->temperature); fread(&((tire_sensor
-//             *)sen[i].sensor_data)->wear_level, sizeof(int), 1, in);
-//             printf("Wear Level: %d\n", ((tire_sensor
-//             *)sen[i].sensor_data)->wear_level); fread(&((tire_sensor
-//             *)sen[i].sensor_data)->performace_score, sizeof(int), 1, in);
-//             printf("Performance Score: %d\n", ((tire_sensor
-//             *)sen[i].sensor_data)->performace_score);
-
-// printf("Tire Sensor\n");
-// fread(&((tire_sensor *)sen[i].sensor_data)->pressure,
-// sizeof(float),
-//       1, in);
-// printf("Pressure: %.2f\n",
-//        ((tire_sensor *)sen[i].sensor_data)->pressure);
-// fread(&((tire_sensor *)sen[i].sensor_data)->temperature,
-//       sizeof(float), 1, in);
-// printf("Temperature: %.2f\n",
-//        ((tire_sensor *)sen[i].sensor_data)->temperature);
-// fread(&((tire_sensor *)sen[i].sensor_data)->wear_level,
-// sizeof(int),
-//       1, in);
-// printf("Wear Level: %d\n",
-//        ((tire_sensor *)sen[i].sensor_data)->wear_level);
-// fread(&((tire_sensor *)sen[i].sensor_data)->performace_score,
-//       sizeof(int), 1, in);
-// printf("Performance Score: %d\n",
-//        ((tire_sensor *)sen[i].sensor_data)->performace_score);
