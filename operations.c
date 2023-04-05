@@ -5,7 +5,6 @@
 
 static void tire_pressure_status(void *data)
 {
-	
 	tire_sensor *t = (tire_sensor *)data;
 	if (t->pressure >= 21 && t->pressure <= 26) {
 		printf("Tire has normal pressure.\n");
