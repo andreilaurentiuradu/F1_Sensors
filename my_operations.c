@@ -103,16 +103,17 @@ int check_TIRE(tire_sensor *s)
 	return 1;
 }
 
-void delete_sensor(sensor *s, int index, int *nr_senzori)
+void delete_sensor(sensor **s, int index, int *nr_senzori)
 {
 	// eliberam memoria ocupata de senzor
-	free(s[index].operations_idxs);
-	free(s[index].sensor_data);
+	free((*s)[index].operations_idxs);
+	free((*s)[index].sensor_data);
 	// mutam senzorii de dupa index cu o pozitie la stanga
 	for (int i = index + 1; i < (*nr_senzori); ++i) {
-		s[i - 1] = s[i];
+		(*s)[i - 1] = (*s)[i];
 	}
 	(*nr_senzori)--;
+	s = (sensor **)realloc(s, (*nr_senzori) * sizeof(sensor));
 }
 
 void clear_sensors(sensor s[], int *nr_senzori)
@@ -120,12 +121,12 @@ void clear_sensors(sensor s[], int *nr_senzori)
 	for (int i = 0; i < (*nr_senzori); ++i) {
 		if (s[i].sensor_type == TIRE &&
 			!check_TIRE((tire_sensor *)(s[i].sensor_data))) {
-			delete_sensor(s, i, nr_senzori);
+			delete_sensor(&s, i, nr_senzori);
 			--i;
 		}
 		if (s[i].sensor_type == PMU &&
 			!check_PMU((power_management_unit *)(s[i].sensor_data))) {
-			delete_sensor(s, i, nr_senzori);
+			delete_sensor(&s, i, nr_senzori);
 			--i;
 		}
 	}
