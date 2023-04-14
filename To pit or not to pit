@@ -24,7 +24,7 @@ void analyze(sensor *s, function_ptr *op);
 // functia care sterge toti senzorii eronati
 void clear_sensors(sensor s[], int *nr_senzori);
 // functia care sterge un senzor de la o anumita pozitie
-void delete_sensor(sensor *s, int index, int *nr_senzori);
+void delete_sensor(sensor **s, int index, int *nr_senzori);
 // functia care verifica daca senzorul TIRE este valid
 int check_TIRE(tire_sensor *s);
 // functia care verifica daca senzorul PMU este valid
@@ -157,6 +157,3 @@ int main(int argc, char const *argv[])
 	fclose(in);
 	return 0;
 }
-
-// to do
-// README CAND E GATA VMCHECKERUL
